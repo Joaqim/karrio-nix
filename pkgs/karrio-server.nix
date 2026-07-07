@@ -21,7 +21,7 @@ let
   pythonEnv = python.withPackages (import ../karrio-server-deps.nix);
 
   # Source roots that extend the `karrio` pkgutil namespace, resolved from the
-  # store copy of `src`. Mirrors nix/dev-shell.nix but for a runtime package.
+  # store copy of `src`. Mirrors ../dev-shell.nix but for a runtime package.
   # apps/api provides karrio.server.*; modules/* provide the rest.
   sourceRoots = [
     "apps/api"

@@ -1,10 +1,10 @@
 # Server-side Python dependency closure, shared by the production derivation
-# (nix/pkgs/karrio-server.nix) and the local dev stack (nix/develop/dev-env.nix)
+# (pkgs/karrio-server.nix) and the local dev stack (develop/dev-env.nix)
 # so dev and prod resolve the identical set.
 #
 # Third-party runtime deps. Stock nixpkgs where possible; packages absent
 # from the pin or needing a different version are supplied by the overlay
-# (nix/python-overlay.nix).
+# (python-overlay.nix).
 ps: [
   # Django stack (karrio targets Django 6)
   ps.django_6
