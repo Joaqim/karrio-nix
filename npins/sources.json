@@ -1,0 +1,31 @@
+{
+  "pins": {
+    "karrio": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "karrioapi",
+        "repo": "karrio"
+      },
+      "branch": "main",
+      "submodules": false,
+      "revision": "deea10f8568b2d48c71bbcc11ec11c62cdaf2a6a",
+      "url": "https://github.com/karrioapi/karrio/archive/deea10f8568b2d48c71bbcc11ec11c62cdaf2a6a.tar.gz",
+      "hash": "sha256-b81svyHCPFUDemG9sbAuswXS33gmN36dunzjN8kGOXE="
+    },
+    "nixpkgs": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "nixos",
+        "repo": "nixpkgs"
+      },
+      "branch": "nixpkgs-unstable",
+      "submodules": false,
+      "revision": "01fbdeef22b76df85ea168fbfe1bfd9e63681b30",
+      "url": "https://github.com/nixos/nixpkgs/archive/01fbdeef22b76df85ea168fbfe1bfd9e63681b30.tar.gz",
+      "hash": "sha256-GMSVw35Q+294GlrTUKlx087E31z7KurReQ1YHSKp5iw="
+    }
+  },
+  "version": 7
+}

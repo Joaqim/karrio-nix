@@ -1,0 +1,13 @@
+# nix
+.direnv
+.env
+!.envrc
+/result
+/result-*
+/.dev-state/
+
+# we are intentionally not using flake inputs, see ./flake.nix
+/flake.lock
+
+# python
+__pycache__
