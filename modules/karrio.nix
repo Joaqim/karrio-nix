@@ -390,9 +390,11 @@ in
             WorkingDirectory = "/var/lib/karrio-dashboard";
             EnvironmentFile = cfg.dashboardEnvironmentFiles;
             Restart = "always";
-            # Next.js writes .next/cache next to server.js; the store is
-            # read-only, so run from a writable working dir that symlinks the
-            # package's standalone tree but keeps .next/cache writable.
+            # Next.js standalone derives its prerender cache dir from the
+            # server.js __dirname (const dir = path.join(__dirname); distDir
+            # "./.next"), so the store is read-only, so run from a writable
+            # working dir that symlinks the package's standalone tree but keeps
+            # .next/cache writable.
             ExecStartPre = pkgs.writeShellScript "karrio-dashboard-prepare" ''
               set -eu
               root=${cfg.dashboardPackage}/share/karrio-dashboard
@@ -406,7 +408,11 @@ in
               rm -rf "$dest"/app/apps/dashboard/.next/cache
               mkdir -p "$dest"/app/apps/dashboard/.next/cache
             '';
-            ExecStart = "${karrioPkgs.nodejs_22}/bin/node /var/lib/karrio-dashboard/app/apps/dashboard/server.js";
+            # --preserve-symlinks-main keeps server.js's symlink path as its
+            # __dirname. Without it Node realpaths the main module back to the
+            # read-only store, so Next writes .next/cache into the store and
+            # fails with ENOENT, defeating the writable-working-dir prep above.
+            ExecStart = "${karrioPkgs.nodejs_22}/bin/node --preserve-symlinks-main /var/lib/karrio-dashboard/app/apps/dashboard/server.js";
           };
         };
 
