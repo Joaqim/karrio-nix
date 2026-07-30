@@ -23,9 +23,7 @@
 let
   devEnv = callPackage ./dev-env.nix { };
   services = callPackage ./services.nix { };
-  seed = callPackage ./seed.nix { };
-  seedApply = callPackage ../seed/apply.nix { };
-  config = callPackage ./process-compose.nix { inherit devEnv services seed seedApply; };
+  config = callPackage ./process-compose.nix { inherit devEnv services; };
 in
 writeShellApplication {
   name = "karrio-develop";

@@ -9,8 +9,6 @@
   services,
   postgresql_16,
   redis,
-  seed,
-  seedApply,
 }:
 let
   # Guarded dev admin seed, kept as its own script so the migrate-seed command
@@ -57,10 +55,9 @@ writeText "process-compose.yaml" (builtins.toJSON {
     };
 
     migrate-seed = {
-      # migrate + collectstatic, then seed the dev admin (guarded, using
-      # KARRIO_DEV_ADMIN_PASSWORD), then converge branding + carriers via the
-      # shared declarative seeder (seed/apply.nix) with the dev seed JSON.
-      command = "${devEnv.karrio}/bin/karrio migrate --noinput && ${devEnv.karrio}/bin/karrio collectstatic --noinput && ${devEnv.karrio}/bin/karrio shell < ${adminSeed} && KARRIO_SEED_JSON=${seed} ${devEnv.karrio}/bin/karrio shell < ${seedApply}";
+      # migrate + collectstatic, then seed the dev admin superuser (guarded,
+      # using KARRIO_DEV_ADMIN_PASSWORD).
+      command = "${devEnv.karrio}/bin/karrio migrate --noinput && ${devEnv.karrio}/bin/karrio collectstatic --noinput && ${devEnv.karrio}/bin/karrio shell < ${adminSeed}";
       depends_on = {
         postgres.condition = "process_healthy";
         redis.condition = "process_healthy";

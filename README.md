@@ -12,9 +12,8 @@ which keeps `nix develop` fast and lets the same pins drive the plain
 ## Outputs
 
 - `nixosModules.karrio` (and `nixosModules.default`) — the `services.karrio`
-  NixOS module: API (gunicorn), Huey worker, Next.js dashboard, optional
-  provisioned PostgreSQL and Redis, and a declarative seeder for branding,
-  system config, system carriers, and an address book.
+  NixOS module: API (gunicorn), Huey worker, Next.js dashboard, and optional
+  provisioned PostgreSQL and Redis.
 - `packages.<system>.karrio-server` — the karrio server derivation
   (`bin/karrio`, `bin/karrio-gunicorn`), built from the upstream pin.
 - `packages.<system>.karrio-dashboard` — the standalone Next.js dashboard build.
@@ -24,7 +23,7 @@ which keeps `nix develop` fast and lets the same pins drive the plain
   dev stack (postgres, redis, mailpit, API + worker, dashboard) under
   process-compose against a writable karrio checkout pointed to by `$KARRIO_ROOT`.
 - `checks.<system>.karrio-module` — a NixOS VM test exercising the module end to
-  end (migrate, seed convergence, API, dashboard, GraphQL, PDF rendering).
+  end (migrate, API, dashboard, GraphQL, PDF rendering).
 
 ## Using the module
 

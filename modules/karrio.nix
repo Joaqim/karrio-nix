@@ -103,75 +103,6 @@ in
       default = { };
       description = "Extra KEY=value env merged into the server environment.";
     };
-
-    branding = {
-      appName = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "constance APP_NAME (converged each activation).";
-      };
-      appWebsite = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "constance APP_WEBSITE.";
-      };
-    };
-
-    systemConfig = lib.mkOption {
-      type = lib.types.attrsOf (lib.types.oneOf [
-        lib.types.str
-        lib.types.int
-        lib.types.bool
-        (lib.types.attrsOf lib.types.str)
-      ]);
-      default = { };
-      description = ''
-        Declared constance keys to converge. A value of { _file = "/path"; } is
-        read at runtime (secrets). Only declared keys are touched.
-      '';
-    };
-
-    systemCarriers = lib.mkOption {
-      default = [ ];
-      description = "System carrier connections upserted by carrierId.";
-      type = lib.types.listOf (lib.types.submodule ({ ... }: {
-        options = {
-          carrierId = lib.mkOption { type = lib.types.str; };
-          carrierCode = lib.mkOption { type = lib.types.str; };
-          testMode = lib.mkOption { type = lib.types.bool; default = true; };
-          active = lib.mkOption { type = lib.types.bool; default = true; };
-          capabilities = lib.mkOption {
-            type = lib.types.listOf lib.types.str;
-            default = [ "rating" "shipping" "tracking" ];
-          };
-          credentialsFile = lib.mkOption { type = lib.types.nullOr lib.types.path; default = null; };
-          config = lib.mkOption { type = lib.types.attrsOf lib.types.str; default = { }; };
-        };
-      }));
-    };
-
-    addressBook = lib.mkOption {
-      default = [ ];
-      description = "Address book entries seeded as Address rows owned by the admin, upserted by label.";
-      type = lib.types.listOf (lib.types.submodule ({ ... }: {
-        options = {
-          label = lib.mkOption { type = lib.types.str; description = "meta.label — the stable upsert key."; };
-          usage = lib.mkOption { type = lib.types.listOf lib.types.str; default = [ ]; description = "meta.usage role tags (sender/pickup/return/...)."; };
-          isDefault = lib.mkOption { type = lib.types.bool; default = false; };
-          companyName = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
-          personName = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
-          addressLine1 = lib.mkOption { type = lib.types.str; };
-          addressLine2 = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
-          city = lib.mkOption { type = lib.types.str; };
-          postalCode = lib.mkOption { type = lib.types.str; };
-          countryCode = lib.mkOption { type = lib.types.str; description = "ISO country code (required by karrio)."; };
-          stateCode = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
-          phoneNumber = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
-          email = lib.mkOption { type = lib.types.nullOr lib.types.str; default = null; };
-          residential = lib.mkOption { type = lib.types.bool; default = false; };
-        };
-      }));
-    };
   };
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
@@ -261,47 +192,6 @@ in
         } // hardening;
         pgUnits = lib.optional cfg.provisionPostgresql "postgresql.service";
         redisUnits = lib.optional cfg.provisionRedis "redis-karrio.service";
-
-        # Normalize the friendly Nix option names to the karrio-native JSON keys
-        # (APP_NAME/APP_WEBSITE/carrier_id/carrier_code/...) that apply.py reads.
-        seedDoc =
-          (lib.optionalAttrs (cfg.branding.appName != null || cfg.branding.appWebsite != null) {
-            branding = lib.filterAttrs (_: v: v != null) {
-              APP_NAME = cfg.branding.appName;
-              APP_WEBSITE = cfg.branding.appWebsite;
-            };
-          })
-          // (lib.optionalAttrs (cfg.systemConfig != { }) { systemConfig = cfg.systemConfig; })
-          // (lib.optionalAttrs (cfg.systemCarriers != [ ]) {
-            systemCarriers = map (c: {
-              carrier_id = c.carrierId;
-              carrier_code = c.carrierCode;
-              test_mode = c.testMode;
-              active = c.active;
-              capabilities = c.capabilities;
-              config = c.config;
-            } // lib.optionalAttrs (c.credentialsFile != null) { credentialsFile = toString c.credentialsFile; }) cfg.systemCarriers;
-          })
-          // (lib.optionalAttrs (cfg.addressBook != [ ]) {
-            addressBook = map (a: lib.filterAttrs (_: v: v != null) {
-              label = a.label;
-              usage = a.usage;
-              is_default = a.isDefault;
-              company_name = a.companyName;
-              person_name = a.personName;
-              address_line1 = a.addressLine1;
-              address_line2 = a.addressLine2;
-              city = a.city;
-              postal_code = a.postalCode;
-              country_code = a.countryCode;
-              state_code = a.stateCode;
-              phone_number = a.phoneNumber;
-              email = a.email;
-              residential = a.residential;
-            }) cfg.addressBook;
-          });
-        seedJson = karrioPkgs.callPackage ../seed/mk-seed-json.nix { } seedDoc;
-        seedApply = karrioPkgs.callPackage ../seed/apply.nix { };
       in
       {
         systemd.services.karrio-migrate = {
@@ -329,23 +219,9 @@ in
           '';
         };
 
-        systemd.services.karrio-seed = lib.mkIf (seedDoc != { }) {
-          description = "karrio declarative system seed (branding, config, carriers)";
-          after = [ "karrio-migrate.service" ];
-          requires = [ "karrio-migrate.service" ];
-          before = [ "karrio-api.service" ];
-          wantedBy = [ "multi-user.target" ];
-          environment = serverEnv // { KARRIO_SEED_JSON = "${seedJson}"; };
-          # Same infinity-timeout hazard as karrio-migrate: bound the oneshot.
-          serviceConfig = commonServer // hardening // { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = 300; };
-          script = "${cfg.serverPackage}/bin/karrio shell < ${seedApply}";
-        };
-
         systemd.services.karrio-api = {
           description = "karrio API (gunicorn ASGI)";
-          after = [ "karrio-migrate.service" ]
-            ++ lib.optional (seedDoc != { }) "karrio-seed.service"
-            ++ pgUnits ++ redisUnits;
+          after = [ "karrio-migrate.service" ] ++ pgUnits ++ redisUnits;
           requires = [ "karrio-migrate.service" ];
           wantedBy = [ "multi-user.target" ];
           environment = serverEnv;
