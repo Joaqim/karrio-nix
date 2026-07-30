@@ -311,7 +311,11 @@ in
           before = [ "karrio-api.service" ];
           wantedBy = [ "multi-user.target" ];
           environment = serverEnv;
-          serviceConfig = commonServer // { Type = "oneshot"; RemainAfterExit = true; };
+          # Type=oneshot defaults TimeoutStartSec to infinity; a hung migrate
+          # (unreachable DB, blocked stdin) would stall the boot transaction
+          # forever and starve every ordered-after unit (api, then dashboard)
+          # of logs. Bound it so a hang fails visibly instead of hanging silently.
+          serviceConfig = commonServer // { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = 600; };
           script = ''
             ${cfg.serverPackage}/bin/karrio migrate --noinput
             ${cfg.serverPackage}/bin/karrio collectstatic --noinput
@@ -332,7 +336,8 @@ in
           before = [ "karrio-api.service" ];
           wantedBy = [ "multi-user.target" ];
           environment = serverEnv // { KARRIO_SEED_JSON = "${seedJson}"; };
-          serviceConfig = commonServer // hardening // { Type = "oneshot"; RemainAfterExit = true; };
+          # Same infinity-timeout hazard as karrio-migrate: bound the oneshot.
+          serviceConfig = commonServer // hardening // { Type = "oneshot"; RemainAfterExit = true; TimeoutStartSec = 300; };
           script = "${cfg.serverPackage}/bin/karrio shell < ${seedApply}";
         };
 
@@ -364,7 +369,11 @@ in
 
         systemd.services.karrio-dashboard = {
           description = "karrio dashboard (Next.js standalone)";
-          after = [ "karrio-api.service" ];
+          # No After=karrio-api: the dashboard reaches the api only at runtime
+          # over HTTP (retryable until the api is up), so a hard ordering would
+          # couple dashboard startup to the api/migrate boot chain and, if a
+          # oneshot in that chain stalls, leave the dashboard queued with no
+          # logs of its own.
           wantedBy = [ "multi-user.target" ];
           environment = {
             PORT = toString cfg.dashboardPort;
