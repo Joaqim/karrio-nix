@@ -34,6 +34,7 @@ let
     # CLI dev extras (modules/cli[dev])
     ps.python-dotenv
     ps.beautifulsoup4
+    ps.httpx
     # Django live-settings dependency used by the server modules
     ps.django-constance
   ]);
