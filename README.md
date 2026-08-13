@@ -14,6 +14,9 @@ which keeps `nix develop` fast and lets the same pins drive the plain
 - `nixosModules.karrio` (and `nixosModules.default`) — the `services.karrio`
   NixOS module: API (gunicorn), Huey worker, Next.js dashboard, and optional
   provisioned PostgreSQL and Redis.
+- `overlays.default` — adds `karrio-server`, `karrio-dashboard`, and
+  `karrioPython` (the interpreter carrying karrio's out-of-tree dependencies) to
+  a consumer's nixpkgs, without replacing the top-level `python3`.
 - `packages.<system>.karrio-server` — the karrio server derivation
   (`bin/karrio`, `bin/karrio-gunicorn`), built from the upstream pin.
 - `packages.<system>.karrio-dashboard` — the standalone Next.js dashboard build.
@@ -40,6 +43,35 @@ services.karrio = {
 The module defaults to the upstream karrio pin. Consumers who need a fork (for
 finished carrier connectors or customizations upstream lacks) override the
 source: `services.karrio.src = <their-fork-src>;`.
+
+## Using the overlay
+
+Applying `overlays.default` is the recommended way to consume the packages, and
+it composes with the module: with the overlay in place the module builds against
+your `pkgs.karrio-server`/`pkgs.karrio-dashboard`; without it the module falls
+back to karrio-nix's own pinned build, so the overlay is recommended, not
+required.
+
+```nix
+# In a NixOS configuration, given inputs.karrio-nix in the consuming flake:
+{
+  nixpkgs.overlays = [ inputs.karrio-nix.overlays.default ];
+  imports = [ inputs.karrio-nix.nixosModules.karrio ];
+}
+```
+
+The overlay adds `pkgs.karrio-server`, `pkgs.karrio-dashboard`, and
+`pkgs.karrioPython` — the Python interpreter carrying karrio's out-of-tree
+dependencies (Django 6 and the local derivations under `pkgs/`). It is
+non-invasive: the top-level `pkgs.python3` is left untouched, so applying the
+overlay does not rebuild the rest of your system's Python packages.
+
+Building a karrio package directly follows the same source-override idiom as the
+module, via the derivation's `src` argument:
+
+```nix
+pkgs.karrio-server.override { src = <their-karrio-src>; }
+```
 
 ## Development
 
