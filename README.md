@@ -1,4 +1,7 @@
 # karrio-nix
+>
+> [!WARNING]
+> This project is almost wholly maintained and developed using LLM-assistance
 
 A generic, zero-input Nix flake packaging [karrio](https://github.com/karrioapi/karrio) —
 the open-source shipping platform — as a NixOS module, buildable packages, and a
