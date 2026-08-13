@@ -201,6 +201,9 @@ in
           before = [ "karrio-api.service" ];
           wantedBy = [ "multi-user.target" ];
           environment = serverEnv;
+          restartTriggers = with cfg; [
+            serverPackage
+          ];
           # Type=oneshot defaults TimeoutStartSec to infinity; a hung migrate
           # (unreachable DB, blocked stdin) would stall the boot transaction
           # forever and starve every ordered-after unit (api, then dashboard)
@@ -225,6 +228,9 @@ in
           requires = [ "karrio-migrate.service" ];
           wantedBy = [ "multi-user.target" ];
           environment = serverEnv;
+          restartTriggers = with cfg; [
+            serverPackage
+          ];
           serviceConfig = commonServer // {
             ExecStart = "${cfg.serverPackage}/bin/karrio-gunicorn";
             Restart = "always";
@@ -237,6 +243,9 @@ in
           requires = [ "karrio-migrate.service" ];
           wantedBy = [ "multi-user.target" ];
           environment = serverEnv;
+          restartTriggers = with cfg; [
+            serverPackage
+          ];
           serviceConfig = commonServer // {
             ExecStart = "${cfg.serverPackage}/bin/karrio run_huey";
             Restart = "always";
@@ -269,6 +278,12 @@ in
             NEXT_PUBLIC_KARRIO_PUBLIC_URL = cfg.publicApiUrl;
             NEXT_PUBLIC_DASHBOARD_URL = cfg.publicDashboardUrl;
           };
+          restartTriggers = with cfg; [
+            dashboardEnvironmentFiles
+            dashboardPackage
+            dashboardPort
+            publicDashboardUrl
+          ];
           serviceConfig = hardening // {
             User = "karrio";
             Group = "karrio";
@@ -309,6 +324,9 @@ in
         systemd.services.karrio-maildev = lib.mkIf cfg.enableMaildev {
           description = "karrio dev SMTP catcher (mailpit)";
           wantedBy = [ "multi-user.target" ];
+          restartTriggers = [
+            karrioPkgs.mailpit
+          ];
           serviceConfig = {
             # maildev is absent from the pinned nixpkgs; mailpit provides the
             # equivalent dev SMTP catcher and is present.
