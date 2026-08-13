@@ -99,13 +99,36 @@
         };
       });
 
-      packages = eachSystem (pkgs: {
-        karrio-server = pkgs.callPackage ./pkgs/karrio-server.nix {
-          src = import ./karrio-src.nix;
-        };
-        karrio-dashboard = pkgs.callPackage ./pkgs/karrio-dashboard.nix {
-          src = import ./karrio-src.nix;
-        };
-      });
+      overlays.default =
+        final: _:
+        {
+          karrio-server = final.callPackage ./pkgs/karrio-server.nix {
+            src = import ./karrio-src.nix;
+          };
+          karrio-dashboard = final.callPackage ./pkgs/karrio-dashboard.nix {
+            src = import ./karrio-src.nix;
+          };
+        }
+        # Provides python3 with dependencies outside of nixpkgs
+        // import (./overlay.nix);
+
+      packages = eachSystem (
+        pkgs:
+        let
+          python3 = pkgs.python3.override {
+            self = python3;
+            packageOverrides = import ./python-overlay.nix;
+          };
+        in
+        {
+          karrio-server = pkgs.callPackage ./pkgs/karrio-server.nix {
+            src = import ./karrio-src.nix;
+            inherit python3;
+          };
+          karrio-dashboard = pkgs.callPackage ./pkgs/karrio-dashboard.nix {
+            src = import ./karrio-src.nix;
+          };
+        }
+      );
     };
 }
