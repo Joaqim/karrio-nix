@@ -40,9 +40,7 @@
         karrio-module =
           let
             karrioPkgs = import ./nixpkgs.nix { inherit (pkgs.stdenv.hostPlatform) system; };
-            serverPackage = karrioPkgs.callPackage ./pkgs/karrio-server.nix {
-              src = import ./karrio-src.nix;
-            };
+            serverPackage = karrioPkgs.karrio-server;
           in
           karrioPkgs.testers.runNixOSTest {
             name = "karrio-module";
@@ -98,36 +96,10 @@
         };
       });
 
-      overlays.default =
-        final: _:
-        {
-          karrio-server = final.callPackage ./pkgs/karrio-server.nix {
-            src = import ./karrio-src.nix;
-          };
-          karrio-dashboard = final.callPackage ./pkgs/karrio-dashboard.nix {
-            src = import ./karrio-src.nix;
-          };
-        }
-        # Provides python3 with dependencies outside of nixpkgs
-        // import (./overlay.nix);
+      overlays.default = import ./overlay.nix;
 
-      packages = eachSystem (
-        pkgs:
-        let
-          python3 = pkgs.python3.override {
-            self = python3;
-            packageOverrides = import ./python-overlay.nix;
-          };
-        in
-        {
-          karrio-server = pkgs.callPackage ./pkgs/karrio-server.nix {
-            src = import ./karrio-src.nix;
-            inherit python3;
-          };
-          karrio-dashboard = pkgs.callPackage ./pkgs/karrio-dashboard.nix {
-            src = import ./karrio-src.nix;
-          };
-        }
-      );
+      packages = eachSystem (pkgs: {
+        inherit (pkgs) karrio-server karrio-dashboard;
+      });
     };
 }
