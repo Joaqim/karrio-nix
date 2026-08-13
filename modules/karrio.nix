@@ -1,9 +1,11 @@
 { config, lib, pkgs, ... }:
 let
   cfg = config.services.karrio;
-  # Build default packages from the workspace's OWN pinned nixpkgs + overlay,
-  # not the consuming system's pkgs — the Django 6 override and local
-  # derivations must apply. Match the host system.
+  # Fallback pkgs from the workspace's OWN pinned nixpkgs + overlay, used when
+  # the consumer has NOT applied overlays.default to their system pkgs. This
+  # guarantees the Django 6 override and local derivations apply regardless of
+  # the consumer's nixpkgs. When the overlay IS applied, the package options
+  # below prefer the consumer's pkgs.karrio-* instead (see serverPackage).
   karrioPkgs = import ../nixpkgs.nix { inherit (pkgs.stdenv.hostPlatform) system; };
 
   # Authoritative "USE_HTTPS in effect" signal, honouring an extraSettings
@@ -33,16 +35,16 @@ in
 
     serverPackage = lib.mkOption {
       type = lib.types.package;
-      default = karrioPkgs.callPackage ../pkgs/karrio-server.nix { src = cfg.src; };
-      defaultText = lib.literalExpression "<karrio-server built from src>";
-      description = "The karrio-server derivation (provides bin/karrio and bin/karrio-gunicorn).";
+      default = (pkgs.karrio-server or karrioPkgs.karrio-server).override { src = cfg.src; };
+      defaultText = lib.literalExpression "(pkgs.karrio-server or karrioPkgs.karrio-server).override { inherit (cfg) src; }";
+      description = "The karrio-server derivation (provides bin/karrio and bin/karrio-gunicorn). Prefers the consumer's overlay-provided pkgs.karrio-server, else the pinned build, with src re-threaded.";
     };
 
     dashboardPackage = lib.mkOption {
       type = lib.types.package;
-      default = karrioPkgs.callPackage ../pkgs/karrio-dashboard.nix { src = cfg.src; };
-      defaultText = lib.literalExpression "<karrio-dashboard built from src>";
-      description = "The karrio-dashboard derivation (provides bin/karrio-dashboard).";
+      default = (pkgs.karrio-dashboard or karrioPkgs.karrio-dashboard).override { src = cfg.src; };
+      defaultText = lib.literalExpression "(pkgs.karrio-dashboard or karrioPkgs.karrio-dashboard).override { inherit (cfg) src; }";
+      description = "The karrio-dashboard derivation (provides bin/karrio-dashboard). Prefers the consumer's overlay-provided pkgs.karrio-dashboard, else the pinned build, with src re-threaded.";
     };
 
     host = lib.mkOption { type = lib.types.str; default = "127.0.0.1"; description = "Bind address for api and dashboard."; };
