@@ -1,6 +1,11 @@
-{ lib, python, writeShellApplication, nodejs_22 }:
+{
+  lib,
+  python3,
+  writeShellApplication,
+  nodejs_22,
+}:
 let
-  pythonEnv = python.withPackages (import ../karrio-server-deps.nix);
+  pythonEnv = python3.withPackages (import ../karrio-server-deps.nix);
   karrio = writeShellApplication {
     name = "karrio";
     runtimeInputs = [ pythonEnv ];
@@ -22,4 +27,7 @@ let
     '';
   };
 in
-{ inherit pythonEnv karrio; node = nodejs_22; }
+{
+  inherit pythonEnv karrio;
+  node = nodejs_22;
+}

@@ -2,7 +2,7 @@
   lib,
   stdenvNoCC,
   fetchurl,
-  python,
+  python3,
   makeWrapper,
   src,
 }:
@@ -18,7 +18,7 @@ let
     url = "https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css";
     sha256 = "1xkz2hyq84nxdp1zsxb5vjpw9w3d7xal2p6jk7bmfmd9g985nfsh";
   };
-  pythonEnv = python.withPackages (import ../karrio-server-deps.nix);
+  pythonEnv = python3.withPackages (import ../karrio-server-deps.nix);
 
   # Source roots that extend the `karrio` pkgutil namespace, resolved from the
   # store copy of `src`. Mirrors ../dev-shell.nix but for a runtime package.

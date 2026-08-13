@@ -6,7 +6,7 @@
 # as editable namespace packages. No virtualenv or pip install step is needed.
 { pkgs }:
 let
-  pythonEnv = pkgs.python.withPackages (ps: [
+  pythonEnv = pkgs.python3.withPackages (ps: [
     # SDK runtime (modules/sdk)
     ps.attrs
     ps.jstruct
