@@ -256,6 +256,7 @@ in
             HOSTNAME = cfg.host;
             AUTH_TRUST_HOST = "true";
             NEXTAUTH_URL = cfg.publicDashboardUrl;
+            NEXT_CACHE_DIR = "%C/karrio-dashboard";
             # Server-side (NextAuth authorize()) reaches the api directly. When
             # the api enforces https it 301-redirects any request lacking
             # X-Forwarded-Proto: https, so this must be the proxy-fronted https
@@ -273,6 +274,7 @@ in
             Group = "karrio";
             StateDirectory = "karrio-dashboard";
             WorkingDirectory = "/var/lib/karrio-dashboard";
+            CacheDirectory = "karrio-dashboard";
             EnvironmentFile = cfg.dashboardEnvironmentFiles;
             Restart = "always";
             # Next.js standalone derives its prerender cache dir from the
