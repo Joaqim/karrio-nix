@@ -99,7 +99,7 @@
       overlays.default = import ./overlay.nix;
 
       packages = eachSystem (pkgs: {
-        inherit (pkgs) karrio-server karrio-dashboard;
+        inherit (pkgs) karrio-server karrio-dashboard karrio-sdk;
       });
     };
 }
