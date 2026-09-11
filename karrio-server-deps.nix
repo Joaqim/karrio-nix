@@ -48,7 +48,7 @@ ps: [
   ps.python-barcode
   ps.qrcode
   ps.pillow
-  ps.pypdf2
+  ps.pypdf
   ps.lxml
   ps.cffi
   ps.pyzint

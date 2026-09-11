@@ -54,14 +54,4 @@ pyfinal: pyprev: {
     dontUsePytestCheck = true;
     pythonImportsCheck = [ ];
   });
-
-  # karrio pins PyPDF2 3.0.1 (superseded upstream by `pypdf`), which nixpkgs
-  # flags as insecure. The carrier mappers import it by name, so keep this exact
-  # package but clear the vulnerability gate locally rather than relaxing the
-  # global insecure-package configuration.
-  pypdf2 = pyprev.pypdf2.overrideAttrs (old: {
-    meta = old.meta // {
-      knownVulnerabilities = [ ];
-    };
-  });
 }
