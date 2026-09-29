@@ -1,6 +1,6 @@
 {
   lib,
-  fetchFromGitHub,
+  src,
   python3Packages,
   jstruct,
   py-soap,
@@ -8,34 +8,18 @@
   ...
 }:
 let
-  version = "2026.1.32";
-  rev = "b9a8d66b43f3b6d00e714665b244576a7a57bd20";
+  projectVersion = dir: (lib.importTOML "${dir}/pyproject.toml").project.version;
 
-  # Sparse fetch rooted at one module directory; one rev shared by the sdk
-  # and every optional module keeps them pinned together.
-  mkKarrioSrc =
-    sparseCheckout: rootDir: hash:
-    fetchFromGitHub {
-      owner = "Joaqim";
-      repo = "karrio";
-      inherit
-        rev
-        sparseCheckout
-        rootDir
-        hash
-        ;
-      fetchSubmodules = false;
-    };
+  sdkSrc = "${src}/modules/sdk";
+  connectorsDir = "${src}/modules/connectors";
 
   karrio = python3Packages.buildPythonPackage {
     pname = "karrio";
-    inherit version;
+    version = projectVersion sdkSrc;
 
     pyproject = true;
 
-    src = mkKarrioSrc [
-      "modules/sdk"
-    ] "modules/sdk" "sha256-1VzotfbxnIulrmAkXc87ysZYJ/5KHksafAh955228BQ=";
+    src = sdkSrc;
 
     build-system = [ python3Packages.setuptools ];
 
@@ -62,32 +46,13 @@ let
       "karrio.core.utils.helpers"
     ];
 
-    passthru.optional-modules = {
-      dhl-freight-sweden = mkConnector {
-        pname = "karrio-dhl-freight-sweden";
-        connectorVersion = "2026.4";
-        connectorPath = "dhl_freight_sweden";
-        description = "Karrio connector for DHL Freight Sweden";
-        hash = "sha256-h9vPRGazoYLyBM29g6WztYyHQSTXITlFjljIikkT25o=";
-        pythonImportsCheck = [
-          "karrio.mappers.dhl_freight_sweden"
-          "karrio.providers.dhl_freight_sweden"
-          "karrio.plugins.dhl_freight_sweden"
-        ];
-      };
-      postnord = mkConnector {
-        pname = "karrio-postnord";
-        connectorVersion = "2026.6";
-        connectorPath = "postnord";
-        description = "Karrio connector for PostNord";
-        hash = "sha256-FvY4fZn8faXzSonLuO7iiogvWsbD2wUHXmLm6iKd6sY=";
-        pythonImportsCheck = [
-          "karrio.mappers.postnord"
-          "karrio.providers.postnord"
-          "karrio.plugins.postnord"
-        ];
-      };
-    };
+    # One entry per connector in `src`, keyed by its directory name with
+    # underscores as dashes (dhl_freight_sweden -> dhl-freight-sweden), so the
+    # set follows whichever karrio source the sdk is built from.
+    passthru.optional-modules = lib.mapAttrs' (
+      connectorPath: _:
+      lib.nameValuePair (lib.replaceStrings [ "_" ] [ "-" ] connectorPath) (mkConnector connectorPath)
+    ) (lib.filterAttrs (_: type: type == "directory") (builtins.readDir connectorsDir));
 
     meta = {
       description = "Multi-carrier shipping API integration with python";
@@ -99,22 +64,16 @@ let
   # Connectors are separate distributions that merge into the karrio.*
   # namespace packages and register a karrio.plugins entry point.
   mkConnector =
-    {
-      pname,
-      connectorVersion,
-      connectorPath,
-      description,
-      hash,
-      pythonImportsCheck,
-    }:
+    connectorPath:
+    let
+      connectorSrc = "${connectorsDir}/${connectorPath}";
+    in
     python3Packages.buildPythonPackage {
-      inherit pname pythonImportsCheck;
-      version = connectorVersion;
+      pname = "karrio-${lib.replaceStrings [ "_" ] [ "-" ] connectorPath}";
+      version = projectVersion connectorSrc;
 
       pyproject = true;
-      src = mkKarrioSrc [
-        "modules/connectors/${connectorPath}"
-      ] "modules/connectors/${connectorPath}" hash;
+      src = connectorSrc;
 
       build-system = [ python3Packages.setuptools ];
 
@@ -122,8 +81,16 @@ let
 
       pythonRelaxDeps = true;
 
+      pythonImportsCheck = map (kind: "karrio.${kind}.${connectorPath}") (
+        lib.filter (kind: builtins.pathExists "${connectorSrc}/karrio/${kind}/${connectorPath}") [
+          "mappers"
+          "providers"
+          "plugins"
+        ]
+      );
+
       meta = {
-        inherit description;
+        description = "Karrio connector ${connectorPath}";
         homepage = "https://github.com/karrioapi/karrio";
         license = lib.licenses.lgpl3Only;
       };

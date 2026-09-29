@@ -37,6 +37,7 @@ in
   lxml-stubs = consumerPython.callPackage ./pkgs/lxml-stubs.nix { inherit (final) lib; };
 
   karrio-sdk = final.callPackage ./pkgs/karrio-sdk.nix {
+    src = import ./karrio-src.nix;
     python3Packages = consumerPython;
     inherit (final) jstruct py-soap lxml-stubs;
   };
