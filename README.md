@@ -20,6 +20,11 @@ which keeps `nix develop` fast and lets the same pins drive the plain
 - `overlays.default` — adds `karrio-server`, `karrio-dashboard`, and
   `karrioPython` (the interpreter carrying karrio's out-of-tree dependencies) to
   a consumer's nixpkgs, without replacing the top-level `python3`.
+- `packages.<system>.karrio-sdk` — the karrio python SDK, built against the
+  consumer's `python3`. Like the server and dashboard it takes a repo-root
+  `src` (`karrio-sdk.override { src = …; }`), and
+  `passthru.optional-modules.<connector>` exposes every connector in that
+  source (underscores become dashes, e.g. `dhl-freight-sweden`).
 - `packages.<system>.karrio-server` — the karrio server derivation
   (`bin/karrio`, `bin/karrio-gunicorn`), built from the upstream pin.
 - `packages.<system>.karrio-dashboard` — the standalone Next.js dashboard build.

@@ -13,6 +13,20 @@ let
   sdkSrc = "${src}/modules/sdk";
   connectorsDir = "${src}/modules/connectors";
 
+  # Upstream karrio still imports PyPDF2 at module load; forks that moved to
+  # pypdf drop it from pyproject, so follow whichever the src declares.
+  requiresPyPDF2 = lib.any (
+    dep: lib.hasPrefix "pypdf2" (lib.toLower dep)
+  ) (lib.importTOML "${sdkSrc}/pyproject.toml").project.dependencies;
+
+  # nixpkgs flags PyPDF2 3.0.1 as insecure; clear the gate for this package
+  # only rather than relaxing the consumer's global insecure-package config.
+  pypdf2 = python3Packages.pypdf2.overrideAttrs (old: {
+    meta = old.meta // {
+      knownVulnerabilities = [ ];
+    };
+  });
+
   karrio = python3Packages.buildPythonPackage {
     pname = "karrio";
     version = projectVersion sdkSrc;
@@ -23,20 +37,23 @@ let
 
     build-system = [ python3Packages.setuptools ];
 
-    dependencies = with python3Packages; [
-      attrs
-      xmltodict
-      lxml
-      pillow
-      phonenumbers
-      python-barcode
-      toml
-      loguru
-      jstruct
-      py-soap
-      lxml-stubs
-      pypdf
-    ];
+    dependencies =
+      with python3Packages;
+      [
+        attrs
+        xmltodict
+        lxml
+        pillow
+        phonenumbers
+        python-barcode
+        toml
+        loguru
+        jstruct
+        py-soap
+        lxml-stubs
+        pypdf
+      ]
+      ++ lib.optional requiresPyPDF2 pypdf2;
 
     pythonRelaxDeps = true;
 
