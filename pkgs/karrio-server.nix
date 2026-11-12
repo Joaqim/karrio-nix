@@ -5,6 +5,11 @@
   python3,
   makeWrapper,
   src,
+  # A prebuilt interpreter env (python3.withPackages …) replaces the default
+  # karrio-server-deps.nix set, letting a deployment share one env instance
+  # across consumers (e.g. an n8n python runner) and add plugin packages
+  # beside the server deps; bin/gunicorn must then come from that env.
+  pythonEnv ? python3.withPackages (import ../karrio-server-deps.nix),
 }:
 let
   # karrio's documents module declares
@@ -18,8 +23,6 @@ let
     url = "https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css";
     sha256 = "1xkz2hyq84nxdp1zsxb5vjpw9w3d7xal2p6jk7bmfmd9g985nfsh";
   };
-  pythonEnv = python3.withPackages (import ../karrio-server-deps.nix);
-
   # Source roots that extend the `karrio` pkgutil namespace, resolved from the
   # store copy of `src`. Mirrors ../dev-shell.nix but for a runtime package.
   # apps/api provides karrio.server.*; modules/* provide the rest.
